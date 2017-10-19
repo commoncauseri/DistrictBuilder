@@ -136,7 +136,11 @@ class ConfigImporter:
         Save all modified po files.
         """
         for locale in self.poutils:
-            self.poutils[locale].save()
+            # TODO: these are coming from somewhere in the setup process.
+            # It's not clear where, but there are too many. Remove this
+            # check and the ENABLED_LANGUAGES setting when that's resolved.
+            if locale in settings.ENABLED_LANGUAGES:
+                self.poutils[locale].save()
 
     def import_superuser(self, force):
         """
@@ -1606,13 +1610,16 @@ class PoUtils:
                 'Report-Msgid-Bugs-To': 'districtbuilder-dev@googlegroups.com',
                 'POT-Creation-Date': now.strftime('%Y-%m-%d %H:%M%z'),
                 'PO-Revision-Date': now.strftime('%Y-%m-%d %H:%M%z'),
-                'Last-Translator': '%s <%s>' % (settings.ADMINS[0][0], settings.ADMINS[0][1]),
-                'Language-Team': '%s <%s>' % (settings.ADMINS[0][0], settings.ADMINS[0][1]),
                 'Language': locale,
                 'MIME-Version': '1.0',
                 'Content-Type': 'text/plain; charset=UTF-8',
                 'Content-Transfer-Encoding': '8bit'
             }
+            if settings.ADMINS:
+                self.pofile.metadata.update({
+                    'Last-Translator': '%s <%s>' % (settings.ADMINS[0][0], settings.ADMINS[0][1]),
+                    'Language-Team': '%s <%s>' % (settings.ADMINS[0][0], settings.ADMINS[0][1]),
+                })
 
     def add_or_update(self, msgid='', msgstr='', occurs=[]):
         """
