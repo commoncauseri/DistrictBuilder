@@ -1,0 +1,65 @@
+#!/bin/bash
+set -e
+
+if [[ -n "${DB_DEBUG}" ]]; then
+    set -x
+fi
+
+DIR="$(dirname "$0")"
+
+function usage() {
+
+    echo -n \
+"Usage: $(basename "$0")
+
+Load a database dump from S3
+"
+}
+
+function load_shapefile() {
+    echo "Creating directory to download data into in django container"
+    docker-compose \
+        exec -T django mkdir -p /data
+
+    if [ -z "/data/VA_data.zip" ]; then
+        echo "Downloading shapefile"
+        docker-compose \
+            exec -T django \
+            wget -q \
+                -O /data/VA_data.zip \
+                https://s3.amazonaws.com/districtbuilderdata/VA_data.zip
+    fi
+
+    echo "Unzipping shapefile"
+    docker-compose \
+        exec -T django \
+        unzip -o /data/VA_data.zip -d /data
+
+    echo "Drop district_builder database"
+    docker-compose \
+        exec -T postgres gosu postgres dropdb district_builder
+
+    echo "Create district_builder database"
+    docker-compose \
+        exec -T postgres gosu postgres createdb district_builder
+
+    echo "Running migrations"
+    docker-compose \
+        exec -T django ./manage.py migrate
+
+    echo "Loading shapefiles into geoserver"
+    docker-compose \
+        exec -T django ./manage.py setup config/config.xml -g1
+}
+
+if [ "${BASH_SOURCE[0]}" = "${0}" ]
+then
+    if [ "${1:-}" = "--help" ]
+    then
+        usage
+    else
+        docker-compose up -d postgres
+        load_shapefile
+    fi
+    exit
+fi
