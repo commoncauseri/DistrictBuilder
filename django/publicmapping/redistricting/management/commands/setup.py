@@ -586,17 +586,17 @@ ERROR:
         Parameters:
             config - The XML configuration.
         """
-        admin = User.objects.filter(is_staff=True)
-        if admin.count() == 0:
+        admins = User.objects.filter(is_staff=True)
+        if admins.count() == 0:
             logger.info("Creating templates requires at least one admin user.")
             return
 
-        admin = admin[0]
+        admin = admins[0]
 
-        deflang = 'en'
+        default_language = 'en'
         try:
-            deflang = config.xpath('//Internationalization')[0].get('default')
-            activate(deflang)
+            default_language = config.xpath('//Internationalization')[0].get('default')
+            activate(default_language)
         except:
             pass
 
@@ -619,7 +619,7 @@ ERROR:
             fconfig = template.xpath('Blockfile')[0]
             path = fconfig.get('path')
 
-            DistrictIndexFile.index2plan( plan_name, legislative_body.id, path, owner=admin, template=True, purge=False, email=None, language=deflang)
+            DistrictIndexFile.index2plan( plan_name, legislative_body.id, path, owner=admin, template=True, purge=False, email=None, language=default_language)
 
             logger.debug('Created template plan "%s"', plan_name)
 

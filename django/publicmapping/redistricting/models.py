@@ -1309,13 +1309,17 @@ class Plan(models.Model):
         Returns:
             The geolevel in this plan with the minimum zoom level
         """
-        leg_levels = LegislativeLevel.objects.filter(legislative_body = self.legislative_body)
-        geolevel = leg_levels[0].geolevel
 
-        for l in leg_levels:
-            if l.geolevel.min_zoom < geolevel.min_zoom:
-                geolevel = l.geolevel
-        return geolevel
+        leg_district = (
+            LegislativeLevel.objects
+            .filter(legislative_body = self.legislative_body)
+            .order_by('geolevel__min_zoom')
+            .first()
+        )
+        if leg_district:
+            return leg_district.geolevel
+        else:
+            raise LegislativeLevel.DoesNotExist
 
     def paste_districts(self, districts, version=None):
         """
@@ -3035,9 +3039,12 @@ def create_unassigned_district(sender, **kwargs):
         unassigned = District(short_label=u"\u0398",long_label=_("Unassigned"), version=0, plan=plan, district_id=0)
 
         biggest_geolevel = plan.get_biggest_geolevel()
-        all_geom = biggest_geolevel.geounit_set.collect().buffer(0)
-        if all_geom.geom_type == 'MultiPolygon':
-            all_geom = all_geom.cascaded_union
+        all_shapes = [x.geom for x in biggest_geolevel.geounit_set.only('geom')]
+        joined_shape = reduce(lambda x, y: x.union(y), all_shapes)
+        if joined_shape.geom_type == 'MultiPolygon':
+            all_geom = joined_shape.cascaded_union
+        else:
+            all_geom = joined_shape
 
         if plan.district_set.count() > 0:
             taken = plan.district_set.all().unionagg()
