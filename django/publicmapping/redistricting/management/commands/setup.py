@@ -198,6 +198,7 @@ file and try again.
             all_ok = False
             logger.info('ERROR importing geolevels.')
             logger.debug(traceback.format_exc())
+            raise
 
 
         # Do this once after processing the geolevels
@@ -519,7 +520,8 @@ ERROR:
             try:
                 value = Decimal(str(feat.get(attr))).quantize(Decimal('000000.0000', 'ROUND_DOWN'))
             except:
-                logger.info('No attribute "%s" on feature %d' , attr, feat.fid)
+
+                # logger.info('No attribute "%s" on feature %d' , attr, feat.fid)
                 continue
             percentage = '0000.00000000'
             if obj.percentage_denominator:

@@ -16,19 +16,17 @@ Load a database dump from S3
 "
 }
 
-function load_shapefile() {
+function load_dev_data() {
     echo "Creating directory to download data into in django container"
     docker-compose \
         exec -T django mkdir -p /data
 
-    if [ -z "/data/VA_data.zip" ]; then
-        echo "Downloading shapefile"
-        docker-compose \
-            exec -T django \
-            wget -q \
-                -O /data/VA_data.zip \
-                https://s3.amazonaws.com/districtbuilderdata/VA_data.zip
-    fi
+    echo "Downloading shapefile"
+    docker-compose \
+        exec -T django \
+        wget -q \
+            -O /data/VA_data.zip \
+            https://s3.amazonaws.com/districtbuilderdata/VA_data.zip
 
     echo "Unzipping shapefile"
     docker-compose \
@@ -49,7 +47,10 @@ function load_shapefile() {
 
     echo "Loading shapefiles into geoserver"
     docker-compose \
-        exec -T django ./manage.py setup config/config.xml -g1
+        exec -T django ./manage.py setup config/config.xml -g0
+# TODO: performance is way too slow to import all three layers (-g2 is census blocks)
+#        exec -T django ./manage.py setup config/config.xml -g0 -g1 -g2
+
 }
 
 if [ "${BASH_SOURCE[0]}" = "${0}" ]
@@ -58,8 +59,8 @@ then
     then
         usage
     else
-        docker-compose up -d postgres
-        load_shapefile
+        docker-compose up -d postgres django
+        load_dev_data
     fi
     exit
 fi
