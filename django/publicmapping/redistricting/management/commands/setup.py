@@ -198,7 +198,6 @@ file and try again.
             all_ok = False
             logger.info('ERROR importing geolevels.')
             logger.debug(traceback.format_exc())
-            raise
 
 
         # Do this once after processing the geolevels

@@ -45,7 +45,7 @@ function load_dev_data() {
     docker-compose \
         exec -T django ./manage.py migrate
 
-    echo "Loading shapefiles into geoserver"
+    echo "Loading shapefiles into database"
     docker-compose \
         exec -T django ./manage.py setup config/config.xml -g0
 # TODO: performance is way too slow to import all three layers (-g2 is census blocks)
